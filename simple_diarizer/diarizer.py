@@ -179,7 +179,7 @@ class Diarizer:
             seg["end"] = seg["end"] / fs
         return cleaned_segments
     
-   @staticmethod
+    @staticmethod
     def get_gpu_with_max_memory():
         try:
             _output_to_list = lambda x: x.decode('ascii').split('\n')[:-1]
