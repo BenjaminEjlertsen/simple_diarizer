@@ -17,7 +17,7 @@ from .utils import check_wav_16khz_mono, convert_wavfile
 class Diarizer:
     def __init__(
         self, embed_model="xvec", cluster_method="sc", window=1.5, period=0.75
-    ):
+        ):
 
         assert embed_model in [
             "xvec",
