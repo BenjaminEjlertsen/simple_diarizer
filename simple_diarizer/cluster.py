@@ -51,10 +51,16 @@ def cluster_SC(embeds, n_clusters=None, threshold=None, enhance_sim=True, **kwar
     """
     if n_clusters is None:
         assert threshold, "If num_clusters is not defined, threshold must be defined"
-
+        
+    print("Computing affinity matrix")
     S = compute_affinity_matrix(embeds)
+    print("Done")
+   
+    print("Enhance sim?",enhance_sim)
     if enhance_sim:
+        print("Enhancing....")
         S = sim_enhancement(S)
+        print("Done")
 
     if n_clusters is None:
         (eigenvalues, eigenvectors) = compute_sorted_eigenvectors(S)
@@ -75,11 +81,15 @@ def cluster_SC(embeds, n_clusters=None, threshold=None, enhance_sim=True, **kwar
         labels = kmeans_clusterer.fit_predict(spectral_embeddings)
         return labels
     else:
+        print("Init Spectral Clustering")
         cluster_model = SpectralClustering(
             n_clusters=n_clusters, affinity="precomputed"
         )
+        print("Fitting:")
+        preds = cluster_model.fit_predict(S)
+        print("Done")
 
-        return cluster_model.fit_predict(S)
+        return preds
 
 
 def diagonal_fill(A):
