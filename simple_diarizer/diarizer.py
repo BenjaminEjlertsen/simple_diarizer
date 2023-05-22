@@ -188,7 +188,7 @@ class Diarizer:
             memory_free_info = _output_to_list(subprocess.check_output(COMMAND.split()))[1:]
             memory_free_values = [int(x.split()[0]) for i, x in enumerate(memory_free_info)]
             print("Memory available:",memory_free_values)
-            print("Selecting GPU {} for diarization".format(np.argmax(memory_free_values))
+            print("Selecting GPU {} for diarization".format(np.argmax(memory_free_values)))
             return np.argmax(memory_free_values)
         except Exception as e:
             print('"nvidia-smi" is probably not installed. GPUs are not usable. Error:', e)
