@@ -1,6 +1,7 @@
 import os
 import sys
 from copy import deepcopy
+import subprocess
 
 import numpy as np
 import pandas as pd
@@ -35,7 +36,7 @@ class Diarizer:
         self.vad_model, self.get_speech_ts = self.setup_VAD()
 
         self.run_opts = (
-            {"device": "cuda:0"} if torch.cuda.is_available() else {"device": "cpu"}
+            {"device":f'cuda:{get_gpu_with_max_memory()}'} if torch.cuda.is_available() else {"device": "cpu"}
         )
 
         if embed_model == "xvec":
@@ -312,6 +313,20 @@ class Diarizer:
             else:
                 new_segments.append(seg)
         return new_segments
+    
+    @staticmethod
+    def get_gpu_with_max_memory():
+        try:
+            _output_to_list = lambda x: x.decode('ascii').split('\n')[:-1]
+
+            COMMAND = "nvidia-smi --query-gpu=memory.free --format=csv"
+            memory_free_info = _output_to_list(subprocess.check_output(COMMAND.split()))[1:]
+            memory_free_values = [int(x.split()[0]) for i, x in enumerate(memory_free_info)]
+            print(memory_free_values)
+            return np.argmax(memory_free_values)
+        except Exception as e:
+            print('"nvidia-smi" is probably not installed. GPUs are not usable. Error:', e)
+
 
     @staticmethod
     def match_diarization_to_transcript(segments, text_segments):
