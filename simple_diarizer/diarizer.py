@@ -16,7 +16,8 @@ from .utils import check_wav_16khz_mono, convert_wavfile
 
 class Diarizer:
     def __init__(
-        self, embed_model="xvec", cluster_method="sc", window=1.5, period=0.75
+        self, embed_model="xvec", cluster_method="sc", window=1.5, period=0.75,
+        device_pref='auto'  # 'auto', 'cpu', or GPU index (0, 1, 2, ...)
         ):
 
         assert embed_model in [
@@ -35,9 +36,13 @@ class Diarizer:
 
         self.vad_model, self.get_speech_ts = self.setup_VAD()
 
-        self.run_opts = (
-            {"device":f'cuda:{self.get_gpu_with_max_memory()}'} if torch.cuda.is_available() else {"device": "cpu"}
-        )
+        if device_pref == 'auto':
+            device_id = self.get_gpu_with_max_memory()
+            self.run_opts = {'device': f'cuda:{device_id}' if torch.cuda.is_available() and device_id is not None else 'cpu'}
+        elif device_pref == 'cpu' or not torch.cuda.is_available():
+            self.run_opts = {'device': 'cpu'}
+        else:
+            self.run_opts = {'device': f'cuda:{device_pref}'}
 
         if embed_model == "xvec":
             self.embed_model = EncoderClassifier.from_hparams(
@@ -187,11 +192,16 @@ class Diarizer:
             COMMAND = "nvidia-smi --query-gpu=memory.free --format=csv"
             memory_free_info = _output_to_list(subprocess.check_output(COMMAND.split()))[1:]
             memory_free_values = [int(x.split()[0]) for i, x in enumerate(memory_free_info)]
-            print("Memory available:",memory_free_values)
-            print("Selecting GPU {} for diarization".format(np.argmax(memory_free_values)))
-            return np.argmax(memory_free_values)
+            print("Memory available:", memory_free_values)
+            max_memory_gpu = np.argmax(memory_free_values)
+            if memory_free_values[max_memory_gpu] < 8000:  # less than 8 GB
+                print('Not enough GPU memory. Falling back to CPU.')
+                return None
+            print("Selecting GPU {} for diarization".format(max_memory_gpu))
+            return max_memory_gpu
         except Exception as e:
             print('"nvidia-smi" is probably not installed. GPUs are not usable. Error:', e)
+            return None
 
     def diarize(
         self,
